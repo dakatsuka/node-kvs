@@ -37,23 +37,25 @@ class KVServer
               when 'get'
                 @hash.get request[1], (value) ->
                   if value
-                    socket.write "#{value}\n"
+                    socket.write "+OK\n#{value}\n"
                   else
-                    socket.write "\n"
+                    socket.write "+EMPTY\n"
 
               when 'set'
                 @hash.set request[1], request[2], ->
-                  socket.write "#{request[2]}\n"
+                  socket.write "+OK\n"
 
               when 'unset'
                 @hash.unset request[1], ->
-                  socket.write ""
+                  socket.write "+OK\n"
 
-              when 'exit'
+              when 'quit'
                 socket.end()
 
+              when ''
+
               else
-                socket.write "command not found\n"
+                socket.write "-ERROR unkown command '#{command}'\n"
 
     server.listen @port, @host
 
