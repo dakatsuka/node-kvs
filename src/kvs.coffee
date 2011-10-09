@@ -1,34 +1,59 @@
 net = require('net')
 
+class KVHash
+  constructor: ->
+    @hash = {}
+
+  get: (key, callback) ->
+    callback @hash[key]
+
+  set: (key, value, callback) ->
+    @hash[key] = value
+    callback()
+
+  unset: (key, callback) ->
+    delete @hash[key]
+    callback()
+
 
 class KVServer
   constructor: (@host, @port) ->
-    @hash = {}
-
-  get: (key) ->
-    @hash[key]
-
-  set: (key, value) ->
-    @hash[key] = value
+    @hash = new KVHash
 
   run: ->
     server = net.createServer (socket) =>
       socket.setEncoding('utf8')
 
       socket.on 'data', (data) =>
-        command = data.replace(/\r\n?/g,"").split(" ")
+        requests = data.replace(/\r/g, "").split("\n")
+        requests.pop()
 
-        switch command[0]
-          when "GET"
-            result = @get(command[1])
-            socket.write "#{result}\n"
+        for request in requests
+          do (request) =>
+            request = request.split(" ")
+            command = request[0].toLowerCase()
 
-          when "SET"
-            @set(command[1], command[2])
-            socket.write "#{command[2]}\n"
+            switch command
+              when 'get'
+                @hash.get request[1], (value) ->
+                  if value
+                    socket.write "#{value}\n"
+                  else
+                    socket.write "\n"
 
-          when "EXIT"
-            socket.end()
+              when 'set'
+                @hash.set request[1], request[2], ->
+                  socket.write "#{request[2]}\n"
+
+              when 'unset'
+                @hash.unset request[1], ->
+                  socket.write ""
+
+              when 'exit'
+                socket.end()
+
+              else
+                socket.write "command not found\n"
 
     server.listen @port, @host
 
