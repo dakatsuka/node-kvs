@@ -62,3 +62,6 @@ class KVServer
 
 kvs = new KVServer '0.0.0.0', '3000'
 kvs.run()
+
+process.on 'uncaughtException', (err) ->
+  console.log "Uncaught exception: #{err} #{err.stack}"
